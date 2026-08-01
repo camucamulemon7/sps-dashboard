@@ -80,6 +80,14 @@ pytest
 uvicorn app.main:app --reload --port 8090
 ```
 
+APIキーなしで画面を確認する場合は、モックデータサーバーを起動します。
+
+```bash
+python -m scripts.mock_server
+```
+
+![ダッシュボードのモック画面](docs/dashboard-mock.png)
+
 ## セキュリティ
 
 - `.env` はGit管理対象外です。
