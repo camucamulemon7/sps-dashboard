@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Usage Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">OBSERVABILITY REPORT</p>
+        <h1 id="dashboard-title">LLM Usage Dashboard</h1>
+        <p class="subtitle">Langfuse Metrics API v2</p>
+      </div>
+      <div class="toolbar">
+        <div id="range-buttons" class="range-buttons" aria-label="集計期間"></div>
+        <button id="refresh-button" type="button" class="refresh-button">更新</button>
+      </div>
+    </header>
+
+    <section class="status-row" aria-live="polite">
+      <span id="source-status" class="status-pill">接続確認中</span>
+      <span id="last-updated">最終更新: --</span>
+      <span id="next-refresh"></span>
+    </section>
+
+    <div id="error-banner" class="error-banner hidden" role="alert"></div>
+
+    <section id="summary-cards" class="cards" aria-label="主要指標"></section>
+
+    <section class="panel trend-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="panel-kicker">TREND</p>
+          <h2>利用量の推移</h2>
+        </div>
+        <div class="legend"><span class="legend-dot"></span>トークン</div>
+      </div>
+      <div id="trend-chart" class="trend-chart"></div>
+    </section>
+
+    <div class="two-column">
+      <section class="panel">
+        <div class="panel-heading">
+          <div><p class="panel-kicker">MODELS</p><h2>モデル別利用量</h2></div>
+        </div>
+        <div id="model-list" class="bar-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div><p class="panel-kicker">USERS</p><h2>ユーザー別利用量</h2></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ユーザー</th><th>リクエスト</th><th>トークン</th><th>コスト</th></tr></thead>
+            <tbody id="user-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <span>自動更新対応</span>
+      <span id="data-window"></span>
+    </footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
