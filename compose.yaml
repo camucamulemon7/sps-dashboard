@@ -1,0 +1,18 @@
+services:
+  dashboard:
+    build: .
+    image: sps-dashboard:local
+    container_name: sps-dashboard
+    restart: unless-stopped
+    env_file:
+      - ${DASHBOARD_ENV_FILE:-.env}
+    ports:
+      - "${DASHBOARD_PORT:-8090}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "host.containers.internal:host-gateway"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
