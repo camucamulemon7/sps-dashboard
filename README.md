@@ -50,6 +50,8 @@ Linux上のDockerではComposeが `host.docker.internal` をホストゲート�
 
 ## SharePoint Server 2013への設置
 
+ダッシュボード右上の **埋め込み** ボタンを押すと、現在の公開URLを使ったiframeコードを生成・コピーできます。`localhost` は同じPCからしか到達できないため、SPSからアクセスできるホスト名またはIPアドレスでダッシュボードを開いてから生成してください。
+
 1. SPSからダッシュボードURLへ到達できることを確認します。
 2. `.env` の `FRAME_ANCESTORS` にSPSサイトのオリジンを追加して再起動します。
 3. SharePointページを編集し、Media and Contentの **Page Viewer Web Part** を追加します。

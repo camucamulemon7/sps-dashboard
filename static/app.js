@@ -54,6 +54,56 @@
     banner.className = message ? 'error-banner' : 'error-banner hidden';
     banner.textContent = message || '';
   }
+  function currentDashboardUrl() {
+    return window.location.href.split('#')[0].split('?')[0];
+  }
+  function iframeMarkup(url) {
+    return '<iframe\n  src="' + url + '"\n  title="LLM Usage Dashboard"\n  width="100%"\n  height="800"\n  frameborder="0">\n</iframe>';
+  }
+  function copyValue(node, label) {
+    function complete(ok) {
+      byId('copy-status').textContent = ok ? label + 'をコピーしました' : 'コピーできませんでした。選択して手動でコピーしてください。';
+    }
+    if (window.navigator.clipboard && window.navigator.clipboard.writeText) {
+      window.navigator.clipboard.writeText(node.value).then(function () { complete(true); }, function () { fallbackCopy(); });
+      return;
+    }
+    fallbackCopy();
+    function fallbackCopy() {
+      node.focus(); node.select();
+      try { complete(document.execCommand('copy')); } catch (error) { complete(false); }
+    }
+  }
+  function openEmbedModal() {
+    var url = currentDashboardUrl();
+    byId('public-url').value = url;
+    byId('iframe-code').value = iframeMarkup(url);
+    byId('preview-link').href = url;
+    byId('copy-status').textContent = '';
+    byId('embed-modal').className = 'modal';
+    byId('embed-modal').setAttribute('aria-hidden', 'false');
+    document.body.className = 'modal-open';
+    byId('embed-close').focus();
+  }
+  function closeEmbedModal() {
+    byId('embed-modal').className = 'modal hidden';
+    byId('embed-modal').setAttribute('aria-hidden', 'true');
+    document.body.className = '';
+    byId('embed-button').focus();
+  }
+  function initEmbedDialog() {
+    byId('embed-button').onclick = openEmbedModal;
+    byId('embed-close').onclick = closeEmbedModal;
+    byId('copy-url').onclick = function () { copyValue(byId('public-url'), '公開URL'); };
+    byId('copy-iframe').onclick = function () { copyValue(byId('iframe-code'), 'iframeコード'); };
+    byId('embed-modal').onclick = function (event) {
+      if (event.target.getAttribute && event.target.getAttribute('data-close-modal') === 'true') { closeEmbedModal(); }
+    };
+    document.onkeydown = function (event) {
+      event = event || window.event;
+      if ((event.key === 'Escape' || event.keyCode === 27) && byId('embed-modal').className.indexOf('hidden') === -1) { closeEmbedModal(); }
+    };
+  }
   function renderRanges() {
     var holder = byId('range-buttons');
     clear(holder);
@@ -183,6 +233,7 @@
       state.config = config; state.range = config.default_range; state.countdown = config.refresh_seconds;
       document.title = config.title; byId('dashboard-title').textContent = config.title;
       renderRanges(); byId('refresh-button').onclick = loadDashboard;
+      initEmbedDialog();
       loadDashboard(); state.timer = window.setInterval(tick, 1000);
     });
   }

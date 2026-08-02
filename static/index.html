@@ -18,6 +18,7 @@
       <div class="toolbar">
         <div id="range-buttons" class="range-buttons" aria-label="集計期間"></div>
         <button id="refresh-button" type="button" class="refresh-button">更新</button>
+        <button id="embed-button" type="button" class="embed-button">埋め込み</button>
       </div>
     </header>
 
@@ -68,6 +69,36 @@
       <span id="data-window"></span>
     </footer>
   </main>
+
+  <div id="embed-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="embed-title" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <section class="modal-card">
+      <div class="modal-heading">
+        <div>
+          <p class="panel-kicker">PUBLISH</p>
+          <h2 id="embed-title">サイトに埋め込む</h2>
+        </div>
+        <button id="embed-close" class="icon-button" type="button" aria-label="閉じる">&times;</button>
+      </div>
+      <p class="modal-description">公開URLを共有するか、iframeコードをSharePointのページへ貼り付けます。</p>
+      <div class="publish-note"><strong>注意:</strong> localhostはこのPCからだけ利用できます。SPSから到達できるホスト名またはIPアドレスでこの画面を開いてコードを生成してください。</div>
+
+      <label class="field-label" for="public-url">公開URL</label>
+      <div class="copy-row">
+        <input id="public-url" class="code-field" type="text" readonly>
+        <button id="copy-url" class="secondary-button" type="button">コピー</button>
+      </div>
+
+      <label class="field-label" for="iframe-code">iframe埋め込みコード</label>
+      <textarea id="iframe-code" class="code-field code-area" rows="6" readonly></textarea>
+
+      <div class="modal-actions">
+        <a id="preview-link" class="secondary-button link-button" href="/" target="_blank" rel="noopener">プレビューを開く</a>
+        <button id="copy-iframe" class="primary-button" type="button">コードをコピー</button>
+      </div>
+      <p id="copy-status" class="copy-status" aria-live="polite"></p>
+    </section>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>
