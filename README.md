@@ -68,7 +68,7 @@ SPSがHTTPSの場合、ブラウザのMixed Content制限を避けるためダ�
 
 プロバイダーは `app/providers/` に分離されています。Grafana、Prometheus、Azure Monitor等は `DashboardProvider` と同じ正規化モデルを返すプロバイダーとして追加できます。APIキー等は各プロバイダー専用の環境変数へ格納します。
 
-Langfuse Metrics API v2では高カーディナリティの `userId` をグルーピングできないため、ユーザー別集計だけはObservations API v2をページングしてサーバー側で集計します。`LANGFUSE_MAX_OBSERVATIONS` を超える場合、画面へpartial/degradedとして表示します。
+リクエスト数とユーザーはTraces APIを正として集計します。モデル、トークン、コスト、レイテンシーはLangfuse v4画面と同様にLLM関連Observation（GENERATION、AGENT、TOOL、CHAIN、RETRIEVER、EVALUATOR、EMBEDDING、GUARDRAIL）だけをMetrics API v2で集計します。高カーディナリティの `userId` はMetrics API v2でグルーピングできないため、Traces APIとObservations API v2をページングしてサーバー側で集計します。`LANGFUSE_MAX_OBSERVATIONS` を超える場合、画面へpartial/degradedとして表示します。
 
 LiteLLM等のOTel exporterが `x-langfuse-ingestion-version: 4` を送信しない場合、Metrics API v2への反映が最大約10分遅れることがあります。画面の自動更新間隔とは別の遅延です。
 

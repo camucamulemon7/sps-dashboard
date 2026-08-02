@@ -33,9 +33,14 @@ async def test_provider_normalizes_metrics_and_users():
             if "timeDimension" in query:
                 return httpx.Response(200, json={"data": [{"time_dimension": "2026-08-01", "count_count": 2, "sum_totalCost": 0.2, "sum_totalTokens": 30}]})
             return httpx.Response(200, json={"data": [{"count_count": 4, "sum_totalCost": 0.2, "sum_inputTokens": 20, "sum_outputTokens": 10, "sum_totalTokens": 30, "avg_latency": 1200, "p95_latency": 1800}]})
+        if request.url.path.endswith("/traces"):
+            return httpx.Response(200, json={"data": [
+                {"id": "t1", "userId": "a@example.com"},
+                {"id": "t2", "userId": "b@example.com"},
+            ], "meta": {"page": 1, "limit": 100, "totalItems": 2, "totalPages": 1}})
         return httpx.Response(200, json={"data": [
-            {"id": "1", "traceId": "t1", "userId": "a@example.com", "level": "DEFAULT", "totalCost": 0.2, "inputUsage": 20, "outputUsage": 10, "totalUsage": 30},
-            {"id": "2", "traceId": "t1", "userId": "a@example.com", "level": "ERROR", "totalCost": 0, "inputUsage": 0, "outputUsage": 0, "totalUsage": 0},
+            {"id": "1", "traceId": "t1", "userId": "a@example.com", "type": "GENERATION", "level": "DEFAULT", "totalCost": 0.2, "inputUsage": 20, "outputUsage": 10, "totalUsage": 30},
+            {"id": "2", "traceId": "t1", "userId": "a@example.com", "type": "SPAN", "level": "ERROR", "totalCost": 9, "inputUsage": 900, "outputUsage": 900, "totalUsage": 1800},
         ], "meta": {"cursor": None}})
 
     provider = LangfuseProvider(config(), transport=httpx.MockTransport(handler))
@@ -44,9 +49,10 @@ async def test_provider_normalizes_metrics_and_users():
         datetime(2026, 8, 1, tzinfo=timezone.utc),
         datetime(2026, 8, 2, tzinfo=timezone.utc),
     )
-    assert data.summary.requests == 1
+    assert data.summary.requests == 2
     assert data.summary.total_tokens == 30
-    assert data.summary.error_rate == 1
+    assert data.summary.error_rate == 0.5
     assert data.models[0].name == "model-a"
     assert data.users[0].user_id == "a@example.com"
     assert data.users[0].requests == 1
+    assert sum(user.requests for user in data.users) == 2
