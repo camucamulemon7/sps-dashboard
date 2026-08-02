@@ -20,10 +20,19 @@ class MockProvider:
         values = [41000, 53000, 48000, 67000, 73000, 62000, 89000, 96000, 82000, 105000, 121000, 114000]
         trend = [
             TrendPoint(
-                timestamp=(end - timedelta(hours=len(values) - index - 1)).strftime("%m/%d %H:%M"),
+                timestamp=(end - timedelta(hours=len(values) - index - 1)).isoformat(),
                 observations=18 + index * 2,
                 total_cost=round(value * 0.000006, 4),
                 total_tokens=value,
+                model_tokens={
+                    "gpt-5": int(value * (0.32 + (index % 3) * 0.03)),
+                    "gpt-5-mini": int(value * (0.30 - (index % 2) * 0.04)),
+                    "claude-sonnet-4": int(value * 0.20),
+                    "gemini-2.5-pro": value
+                    - int(value * (0.32 + (index % 3) * 0.03))
+                    - int(value * (0.30 - (index % 2) * 0.04))
+                    - int(value * 0.20),
+                },
             )
             for index, value in enumerate(values)
         ]

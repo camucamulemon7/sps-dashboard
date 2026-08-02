@@ -70,7 +70,17 @@ def _complete_trend(
     for row in rows:
         timestamp = _parse_timestamp(row.get("time_dimension"))
         if timestamp is not None:
-            indexed[_floor_timestamp(timestamp, granularity)] = row
+            bucket = _floor_timestamp(timestamp, granularity)
+            current = indexed.setdefault(
+                bucket,
+                {"count_count": 0, "sum_totalCost": 0.0, "sum_totalTokens": 0, "models": {}},
+            )
+            current["count_count"] += int(_number(row.get("count_count")))
+            current["sum_totalCost"] += _number(row.get("sum_totalCost"))
+            tokens = int(_number(row.get("sum_totalTokens")))
+            current["sum_totalTokens"] += tokens
+            model = str(row.get("providedModelName") or "(unassigned)")
+            current["models"][model] = current["models"].get(model, 0) + tokens
 
     points: list[TrendPoint] = []
     current = _floor_timestamp(start, granularity)
@@ -83,6 +93,7 @@ def _complete_trend(
                 observations=int(_number(row.get("count_count"))),
                 total_cost=_number(row.get("sum_totalCost")),
                 total_tokens=int(_number(row.get("sum_totalTokens"))),
+                model_tokens=row.get("models", {}),
             )
         )
         current += step
@@ -217,7 +228,7 @@ class LangfuseProvider:
         granularity = _trend_granularity(start, end)
         query.update(
             {
-                "dimensions": [],
+                "dimensions": [{"field": "providedModelName"}],
                 "metrics": [
                     {"measure": "count", "aggregation": "count"},
                     {"measure": "totalCost", "aggregation": "sum"},

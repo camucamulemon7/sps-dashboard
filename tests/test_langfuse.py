@@ -27,12 +27,16 @@ def test_complete_trend_fills_empty_hours():
     start = datetime(2026, 8, 1, 0, 30, tzinfo=timezone.utc)
     end = datetime(2026, 8, 1, 3, 15, tzinfo=timezone.utc)
     points = _complete_trend(
-        [{"time_dimension": "2026-08-01T02:00:00Z", "count_count": 2, "sum_totalTokens": 30}],
+        [
+            {"time_dimension": "2026-08-01T02:00:00Z", "providedModelName": "model-a", "count_count": 1, "sum_totalTokens": 20},
+            {"time_dimension": "2026-08-01T02:00:00Z", "providedModelName": "model-b", "count_count": 1, "sum_totalTokens": 10},
+        ],
         start,
         end,
     )
     assert len(points) == 4
     assert [point.total_tokens for point in points] == [0, 0, 30, 0]
+    assert points[2].model_tokens == {"model-a": 20, "model-b": 10}
 
 
 @pytest.mark.asyncio
@@ -40,10 +44,10 @@ async def test_provider_normalizes_metrics_and_users():
     async def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/metrics"):
             query = request.url.params["query"]
+            if "timeDimension" in query:
+                return httpx.Response(200, json={"data": [{"time_dimension": "2026-08-01", "providedModelName": "model-a", "count_count": 2, "sum_totalCost": 0.2, "sum_totalTokens": 30}]})
             if "providedModelName" in query:
                 return httpx.Response(200, json={"data": [{"providedModelName": "model-a", "count_count": 2, "sum_totalCost": 0.2, "sum_totalTokens": 30, "avg_latency": 1200}]})
-            if "timeDimension" in query:
-                return httpx.Response(200, json={"data": [{"time_dimension": "2026-08-01", "count_count": 2, "sum_totalCost": 0.2, "sum_totalTokens": 30}]})
             return httpx.Response(200, json={"data": [{"count_count": 4, "sum_totalCost": 0.2, "sum_inputTokens": 20, "sum_outputTokens": 10, "sum_totalTokens": 30, "avg_latency": 1200, "p95_latency": 1800}]})
         if request.url.path.endswith("/traces"):
             return httpx.Response(200, json={"data": [
@@ -65,6 +69,7 @@ async def test_provider_normalizes_metrics_and_users():
     assert data.summary.total_tokens == 30
     assert data.summary.error_rate == 0.5
     assert data.models[0].name == "model-a"
+    assert data.trend[0].model_tokens == {"model-a": 30}
     assert data.users[0].user_id == "a@example.com"
     assert data.users[0].requests == 1
     assert sum(user.requests for user in data.users) == 2

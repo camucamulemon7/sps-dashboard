@@ -22,6 +22,7 @@ class TrendPoint(BaseModel):
     observations: int = 0
     total_cost: float = 0
     total_tokens: int = 0
+    model_tokens: dict[str, int] = Field(default_factory=dict)
 
 
 class ModelMetric(BaseModel):

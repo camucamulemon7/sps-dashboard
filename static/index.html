@@ -11,7 +11,7 @@
   <main class="shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">OBSERVABILITY REPORT</p>
+        <p class="eyebrow">利用状況レポート</p>
         <h1 id="dashboard-title">LLM Usage Dashboard</h1>
         <p class="subtitle">Langfuse Metrics API v2</p>
       </div>
@@ -35,10 +35,9 @@
     <section class="panel trend-panel">
       <div class="panel-heading">
         <div>
-          <p class="panel-kicker">TREND</p>
           <h2>利用量の推移</h2>
         </div>
-        <div class="legend"><span class="legend-dot"></span>トークン</div>
+        <div id="trend-legend" class="legend" aria-label="モデル凡例"></div>
       </div>
       <div id="trend-chart" class="trend-chart"></div>
     </section>
@@ -46,14 +45,14 @@
     <div class="two-column">
       <section class="panel">
         <div class="panel-heading">
-          <div><p class="panel-kicker">MODELS</p><h2>モデル別利用量</h2></div>
+          <div><h2>モデル別利用量</h2></div>
         </div>
         <div id="model-list" class="bar-list"></div>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <div><p class="panel-kicker">USERS</p><h2>ユーザー別利用量</h2></div>
+          <div><h2>ユーザー別利用量</h2></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -75,7 +74,6 @@
     <section class="modal-card">
       <div class="modal-heading">
         <div>
-          <p class="panel-kicker">PUBLISH</p>
           <h2 id="embed-title">サイトに埋め込む</h2>
         </div>
         <button id="embed-close" class="icon-button" type="button" aria-label="閉じる">&times;</button>
