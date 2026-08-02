@@ -38,10 +38,15 @@ h2 { font-size: 18px; margin: 0; }
 .trend-panel { margin-bottom: 13px; }
 .legend { color: #8495aa; font-size: 11px; }
 .legend-dot { width: 7px; height: 7px; display: inline-block; margin-right: 6px; background: #55e6c1; border-radius: 50%; }
-.trend-chart svg { width: 100%; height: 250px; display: block; }
-.chart-grid { stroke: #27405a; stroke-width: 1; }
+.trend-chart svg { width: 100%; height: 270px; display: block; }
+.chart-grid { stroke: #20374e; stroke-width: 1; }
 .chart-area { fill: rgba(85,230,193,.11); }
 .chart-line { fill: none; stroke: #55e6c1; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart-bar { fill: #55e6c1; cursor: pointer; transition: opacity .15s; }
+.chart-bar:hover, .chart-bar:focus { fill: #7aefd1; opacity: 1; outline: none; }
+.chart-bar-empty { fill: #29445c; opacity: .6; }
+.chart-scale, .chart-axis-label { fill: #61758c; font-size: 9px; }
+.chart-detail { min-height: 17px; margin: 2px 0 0; color: #8195ac; text-align: center; font-size: 11px; }
 .chart-labels { display: flex; justify-content: space-between; color: #61758c; font-size: 10px; }
 .two-column { display: flex; gap: 13px; }
 .two-column > .panel { width: 50%; }

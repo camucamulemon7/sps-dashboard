@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -41,6 +41,52 @@ def _number(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _trend_granularity(start: datetime, end: datetime) -> str:
+    return "hour" if (end - start).total_seconds() <= 48 * 3600 else "day"
+
+
+def _floor_timestamp(value: datetime, granularity: str) -> datetime:
+    value = value.astimezone(timezone.utc)
+    if granularity == "hour":
+        return value.replace(minute=0, second=0, microsecond=0)
+    return value.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _complete_trend(
+    rows: list[dict[str, Any]], start: datetime, end: datetime
+) -> list[TrendPoint]:
+    granularity = _trend_granularity(start, end)
+    step = timedelta(hours=1) if granularity == "hour" else timedelta(days=1)
+    indexed: dict[datetime, dict[str, Any]] = {}
+    for row in rows:
+        timestamp = _parse_timestamp(row.get("time_dimension"))
+        if timestamp is not None:
+            indexed[_floor_timestamp(timestamp, granularity)] = row
+
+    points: list[TrendPoint] = []
+    current = _floor_timestamp(start, granularity)
+    last = _floor_timestamp(end, granularity)
+    while current <= last:
+        row = indexed.get(current, {})
+        points.append(
+            TrendPoint(
+                timestamp=_iso(current),
+                observations=int(_number(row.get("count_count"))),
+                total_cost=_number(row.get("sum_totalCost")),
+                total_tokens=int(_number(row.get("sum_totalTokens"))),
+            )
+        )
+        current += step
+    return points
 
 
 class LangfuseProvider:
@@ -168,8 +214,7 @@ class LangfuseProvider:
     @classmethod
     def _trend_query(cls, start: datetime, end: datetime) -> dict[str, Any]:
         query = cls._base_query(start, end)
-        hours = (end - start).total_seconds() / 3600
-        granularity = "hour" if hours <= 48 else "day"
+        granularity = _trend_granularity(start, end)
         query.update(
             {
                 "dimensions": [],
@@ -282,15 +327,7 @@ class LangfuseProvider:
             p95_latency_ms=_number(summary_row.get("p95_latency")),
             error_rate=(error_requests / trace_count) if trace_count else 0,
         )
-        trend = [
-            TrendPoint(
-                timestamp=str(row.get("time_dimension", "")),
-                observations=int(_number(row.get("count_count"))),
-                total_cost=_number(row.get("sum_totalCost")),
-                total_tokens=int(_number(row.get("sum_totalTokens"))),
-            )
-            for row in trend_rows
-        ]
+        trend = _complete_trend(trend_rows, start, end)
         models = [
             ModelMetric(
                 name=str(row.get("providedModelName") or "(unassigned)"),

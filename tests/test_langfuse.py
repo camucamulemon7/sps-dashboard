@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from app.config import Settings
-from app.providers.langfuse import LangfuseProvider
+from app.providers.langfuse import LangfuseProvider, _complete_trend
 
 
 def config() -> Settings:
@@ -21,6 +21,18 @@ def config() -> Settings:
         langfuse_secret_key="sk",
         langfuse_max_observations=1000,
     )
+
+
+def test_complete_trend_fills_empty_hours():
+    start = datetime(2026, 8, 1, 0, 30, tzinfo=timezone.utc)
+    end = datetime(2026, 8, 1, 3, 15, tzinfo=timezone.utc)
+    points = _complete_trend(
+        [{"time_dimension": "2026-08-01T02:00:00Z", "count_count": 2, "sum_totalTokens": 30}],
+        start,
+        end,
+    )
+    assert len(points) == 4
+    assert [point.total_tokens for point in points] == [0, 0, 30, 0]
 
 
 @pytest.mark.asyncio

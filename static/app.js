@@ -139,33 +139,60 @@
     var holder = byId('trend-chart');
     clear(holder);
     if (!points.length) { holder.appendChild(text('p', 'empty', '対象期間のデータがありません')); return; }
-    var width = 900, height = 250, padX = 46, padY = 28, max = 1;
+    var width = 900, height = 270, padX = 48, top = 20, bottom = 224, max = 1;
     for (var i = 0; i < points.length; i += 1) { max = Math.max(max, Number(points[i].total_tokens || 0)); }
-    var coords = [];
-    for (i = 0; i < points.length; i += 1) {
-      var x = points.length === 1 ? width / 2 : padX + i * (width - padX * 2) / (points.length - 1);
-      var y = height - padY - Number(points[i].total_tokens || 0) / max * (height - padY * 2);
-      coords.push(x.toFixed(1) + ',' + y.toFixed(1));
-    }
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
     svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', 'トークン利用量の推移');
-    var baseline = document.createElementNS(svg.namespaceURI, 'line');
-    baseline.setAttribute('x1', padX); baseline.setAttribute('x2', width - padX);
-    baseline.setAttribute('y1', height - padY); baseline.setAttribute('y2', height - padY);
-    baseline.setAttribute('class', 'chart-grid'); svg.appendChild(baseline);
-    var area = document.createElementNS(svg.namespaceURI, 'polygon');
-    area.setAttribute('points', padX + ',' + (height - padY) + ' ' + coords.join(' ') + ' ' + (width - padX) + ',' + (height - padY));
-    area.setAttribute('class', 'chart-area'); svg.appendChild(area);
-    var line = document.createElementNS(svg.namespaceURI, 'polyline');
-    line.setAttribute('points', coords.join(' ')); line.setAttribute('class', 'chart-line'); svg.appendChild(line);
-    holder.appendChild(svg);
-    var labels = document.createElement('div'); labels.className = 'chart-labels';
-    labels.appendChild(text('span', '', points[0].timestamp));
-    labels.appendChild(text('span', '', formatCompact(max) + ' tokens peak'));
-    labels.appendChild(text('span', '', points[points.length - 1].timestamp));
-    holder.appendChild(labels);
+    svg.setAttribute('aria-label', '時間別トークン利用量');
+    for (i = 0; i <= 4; i += 1) {
+      var gridY = top + i * (bottom - top) / 4;
+      var grid = document.createElementNS(svg.namespaceURI, 'line');
+      grid.setAttribute('x1', padX); grid.setAttribute('x2', width - padX);
+      grid.setAttribute('y1', gridY); grid.setAttribute('y2', gridY);
+      grid.setAttribute('class', 'chart-grid'); svg.appendChild(grid);
+      var scale = document.createElementNS(svg.namespaceURI, 'text');
+      scale.setAttribute('x', padX - 7); scale.setAttribute('y', gridY + 4);
+      scale.setAttribute('class', 'chart-scale'); scale.setAttribute('text-anchor', 'end');
+      scale.appendChild(document.createTextNode(formatCompact(max * (4 - i) / 4)));
+      svg.appendChild(scale);
+    }
+    var plotWidth = width - padX * 2;
+    var step = plotWidth / points.length;
+    var barWidth = Math.max(3, step * 0.62);
+    var detail = text('p', 'chart-detail', '棒にカーソルを合わせると時間別の値を確認できます');
+    function pointLabel(point) {
+      var date = new Date(point.timestamp);
+      var month = date.getMonth() + 1, day = date.getDate(), hour = date.getHours();
+      return month + '/' + day + ' ' + (hour < 10 ? '0' : '') + hour + ':00';
+    }
+    for (i = 0; i < points.length; i += 1) {
+      (function (point, index) {
+        var value = Number(point.total_tokens || 0);
+        var barHeight = value ? value / max * (bottom - top) : 1;
+        var bar = document.createElementNS(svg.namespaceURI, 'rect');
+        bar.setAttribute('x', padX + index * step + (step - barWidth) / 2);
+        bar.setAttribute('y', bottom - barHeight); bar.setAttribute('width', barWidth);
+        bar.setAttribute('height', barHeight);
+        bar.setAttribute('class', value ? 'chart-bar' : 'chart-bar chart-bar-empty');
+        bar.setAttribute('tabindex', '0');
+        var message = pointLabel(point) + ' — ' + formatNumber(value) + ' tokens / ' + formatNumber(point.observations) + ' calls';
+        var title = document.createElementNS(svg.namespaceURI, 'title');
+        title.appendChild(document.createTextNode(message)); bar.appendChild(title);
+        bar.onmouseover = bar.onfocus = function () { detail.textContent = message; };
+        svg.appendChild(bar);
+        var labelEvery = Math.max(1, Math.ceil(points.length / 8));
+        if (index % labelEvery === 0 || index === points.length - 1) {
+          var axisLabel = document.createElementNS(svg.namespaceURI, 'text');
+          axisLabel.setAttribute('x', padX + index * step + step / 2);
+          axisLabel.setAttribute('y', bottom + 22); axisLabel.setAttribute('text-anchor', 'middle');
+          axisLabel.setAttribute('class', 'chart-axis-label');
+          axisLabel.appendChild(document.createTextNode(pointLabel(point)));
+          svg.appendChild(axisLabel);
+        }
+      }(points[i], i));
+    }
+    holder.appendChild(svg); holder.appendChild(detail);
   }
   function renderModels(models) {
     var holder = byId('model-list'); clear(holder);
