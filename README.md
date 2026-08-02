@@ -9,7 +9,7 @@ Langfuse Metrics API v2の利用状況を、SharePoint Server 2013のPage Viewer
 - 入力・出力・合計トークン
 - 平均およびP95レイテンシー
 - エラー率
-- 時系列推移
+- モデル別の積み上げ時系列推移（24時間は0件の時間帯を含む時間別、7日以上は日別）
 - モデル別利用量
 - ユーザー別利用量
 
@@ -50,6 +50,8 @@ Linux上のDockerではComposeが `host.docker.internal` をホストゲート�
 
 ## SharePoint Server 2013への設置
 
+ダッシュボード右上の **埋め込み** ボタンを押すと、現在の公開URLを使ったiframeコードを生成・コピーできます。`localhost` は同じPCからしか到達できないため、SPSからアクセスできるホスト名またはIPアドレスでダッシュボードを開いてから生成してください。
+
 1. SPSからダッシュボードURLへ到達できることを確認します。
 2. `.env` の `FRAME_ANCESTORS` にSPSサイトのオリジンを追加して再起動します。
 3. SharePointページを編集し、Media and Contentの **Page Viewer Web Part** を追加します。
@@ -66,7 +68,7 @@ SPSがHTTPSの場合、ブラウザのMixed Content制限を避けるためダ�
 
 プロバイダーは `app/providers/` に分離されています。Grafana、Prometheus、Azure Monitor等は `DashboardProvider` と同じ正規化モデルを返すプロバイダーとして追加できます。APIキー等は各プロバイダー専用の環境変数へ格納します。
 
-Langfuse Metrics API v2では高カーディナリティの `userId` をグルーピングできないため、ユーザー別集計だけはObservations API v2をページングしてサーバー側で集計します。`LANGFUSE_MAX_OBSERVATIONS` を超える場合、画面へpartial/degradedとして表示します。
+リクエスト数とユーザーはTraces APIを正として集計します。モデル、トークン、コスト、レイテンシーはLangfuse v4画面と同様にLLM関連Observation（GENERATION、AGENT、TOOL、CHAIN、RETRIEVER、EVALUATOR、EMBEDDING、GUARDRAIL）だけをMetrics API v2で集計します。高カーディナリティの `userId` はMetrics API v2でグルーピングできないため、Traces APIとObservations API v2をページングしてサーバー側で集計します。`LANGFUSE_MAX_OBSERVATIONS` を超える場合、画面へpartial/degradedとして表示します。
 
 LiteLLM等のOTel exporterが `x-langfuse-ingestion-version: 4` を送信しない場合、Metrics API v2への反映が最大約10分遅れることがあります。画面の自動更新間隔とは別の遅延です。
 
@@ -79,6 +81,14 @@ pip install -r requirements-dev.txt
 pytest
 uvicorn app.main:app --reload --port 8090
 ```
+
+APIキーなしで画面を確認する場合は、モックデータサーバーを起動します。
+
+```bash
+python -m scripts.mock_server
+```
+
+![ダッシュボードのモック画面](docs/dashboard-mock.png)
 
 ## セキュリティ
 

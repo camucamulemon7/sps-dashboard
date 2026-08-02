@@ -11,13 +11,14 @@
   <main class="shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">OBSERVABILITY REPORT</p>
+        <p class="eyebrow">利用状況レポート</p>
         <h1 id="dashboard-title">LLM Usage Dashboard</h1>
         <p class="subtitle">Langfuse Metrics API v2</p>
       </div>
       <div class="toolbar">
         <div id="range-buttons" class="range-buttons" aria-label="集計期間"></div>
         <button id="refresh-button" type="button" class="refresh-button">更新</button>
+        <button id="embed-button" type="button" class="embed-button">埋め込み</button>
       </div>
     </header>
 
@@ -34,10 +35,9 @@
     <section class="panel trend-panel">
       <div class="panel-heading">
         <div>
-          <p class="panel-kicker">TREND</p>
           <h2>利用量の推移</h2>
         </div>
-        <div class="legend"><span class="legend-dot"></span>トークン</div>
+        <div id="trend-legend" class="legend" aria-label="モデル凡例"></div>
       </div>
       <div id="trend-chart" class="trend-chart"></div>
     </section>
@@ -45,14 +45,14 @@
     <div class="two-column">
       <section class="panel">
         <div class="panel-heading">
-          <div><p class="panel-kicker">MODELS</p><h2>モデル別利用量</h2></div>
+          <div><h2>モデル別利用量</h2></div>
         </div>
         <div id="model-list" class="bar-list"></div>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <div><p class="panel-kicker">USERS</p><h2>ユーザー別利用量</h2></div>
+          <div><h2>ユーザー別利用量</h2></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -68,6 +68,35 @@
       <span id="data-window"></span>
     </footer>
   </main>
+
+  <div id="embed-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="embed-title" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <section class="modal-card">
+      <div class="modal-heading">
+        <div>
+          <h2 id="embed-title">サイトに埋め込む</h2>
+        </div>
+        <button id="embed-close" class="icon-button" type="button" aria-label="閉じる">&times;</button>
+      </div>
+      <p class="modal-description">公開URLを共有するか、iframeコードをSharePointのページへ貼り付けます。</p>
+      <div class="publish-note"><strong>注意:</strong> localhostはこのPCからだけ利用できます。SPSから到達できるホスト名またはIPアドレスでこの画面を開いてコードを生成してください。</div>
+
+      <label class="field-label" for="public-url">公開URL</label>
+      <div class="copy-row">
+        <input id="public-url" class="code-field" type="text" readonly>
+        <button id="copy-url" class="secondary-button" type="button">コピー</button>
+      </div>
+
+      <label class="field-label" for="iframe-code">iframe埋め込みコード</label>
+      <textarea id="iframe-code" class="code-field code-area" rows="6" readonly></textarea>
+
+      <div class="modal-actions">
+        <a id="preview-link" class="secondary-button link-button" href="/" target="_blank" rel="noopener">プレビューを開く</a>
+        <button id="copy-iframe" class="primary-button" type="button">コードをコピー</button>
+      </div>
+      <p id="copy-status" class="copy-status" aria-live="polite"></p>
+    </section>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>
