@@ -56,7 +56,8 @@ def _floor_timestamp(value: datetime, granularity: str) -> datetime:
 
 def _parse_timestamp(value: Any) -> datetime | None:
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError):
         return None
 
@@ -160,6 +161,8 @@ class LangfuseProvider:
         page = 1
         total_items = 0
         partial = False
+        # Page offsets depend on limit, so keep it fixed even for the final capped page.
+        page_size = min(100, self.config.langfuse_max_observations)
         while True:
             remaining = self.config.langfuse_max_observations - len(records)
             if remaining <= 0:
@@ -169,7 +172,7 @@ class LangfuseProvider:
                 "/api/public/traces",
                 params={
                     "fields": "core,metrics",
-                    "limit": min(100, remaining),
+                    "limit": page_size,
                     "page": page,
                     "fromTimestamp": _iso(start),
                     "toTimestamp": _iso(end),
@@ -177,10 +180,17 @@ class LangfuseProvider:
             )
             response.raise_for_status()
             payload = response.json()
-            records.extend(payload.get("data", []))
+            page_records = payload.get("data", [])
+            records.extend(page_records[:remaining])
             meta = payload.get("meta") or {}
             total_items = int(_number(meta.get("totalItems")))
             total_pages = int(_number(meta.get("totalPages")))
+            if len(page_records) > remaining or (
+                len(records) >= self.config.langfuse_max_observations
+                and (page < total_pages or len(records) < total_items)
+            ):
+                partial = True
+                break
             if page >= total_pages:
                 break
             page += 1

@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from app.config import Settings
-from app.providers.langfuse import LangfuseProvider, _complete_trend
+from app.providers.langfuse import LangfuseProvider, _complete_trend, _parse_timestamp
 
 
 def config() -> Settings:
@@ -73,3 +73,44 @@ async def test_provider_normalizes_metrics_and_users():
     assert data.users[0].user_id == "a@example.com"
     assert data.users[0].requests == 1
     assert sum(user.requests for user in data.users) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('cap,total', [(1050, 1200), (1050, 1050), (1000, 1000), (1050, 1030)])
+async def test_trace_pagination_preserves_offsets_and_reports_truncation(cap, total):
+    from dataclasses import replace
+    from math import ceil
+
+    limits = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        limit = int(request.url.params['limit'])
+        page = int(request.url.params['page'])
+        limits.append(limit)
+        offset = (page - 1) * limit
+        return httpx.Response(200, json={
+            'data': [{'id': f't{index}'} for index in range(offset, min(offset + limit, total))],
+            'meta': {'totalItems': total, 'totalPages': ceil(total / limit)},
+        })
+
+    provider = LangfuseProvider(replace(config(), langfuse_max_observations=cap),
+                                transport=httpx.MockTransport(handler))
+    async with provider._client() as client:
+        records, count, partial = await provider._traces(
+            client, datetime(2026, 8, 1, tzinfo=timezone.utc),
+            datetime(2026, 8, 2, tzinfo=timezone.utc),
+        )
+    assert [row['id'] for row in records] == [f't{i}' for i in range(min(cap, total))]
+    assert count == total
+    assert partial is (total > cap)
+    assert set(limits) == {100}
+
+
+@pytest.mark.parametrize("value", ["2026-08-01", "2026-08-01T00:00:00", "2026-08-01T00:00:00Z"])
+def test_metrics_timestamps_without_offset_are_utc(value):
+    assert _parse_timestamp(value) == datetime(2026, 8, 1, tzinfo=timezone.utc)
+    assert _parse_timestamp(value).tzinfo is timezone.utc
+
+
+def test_metrics_timestamp_preserves_explicit_offset():
+    assert _parse_timestamp("2026-08-01T09:00:00+09:00") == datetime(2026, 8, 1, tzinfo=timezone.utc)
